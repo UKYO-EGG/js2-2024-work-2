@@ -1,13 +1,281 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オセロゲーム</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333;
+      margin: 0;
+    }
+
+    .game-container {
+      text-align: center;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2.5rem;
+      color: #333;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-template-rows: repeat(8, 60px);
+      gap: 4px;
+      margin: 0 auto;
+      margin-bottom: 20px;
+      background-color: #228B22;
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    .cell {
+      width: 60px;
+      height: 60px;
+      background-color: #228B22;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .cell:hover {
+      transform: scale(1.1);
+    }
+
+    .cell.black {
+      background-color: #333;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .cell.white {
+      background-color: #fff;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+    }
+
+    .restart-btn {
+      padding: 12px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    .restart-btn:hover {
+      background-color: #45a049;
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .restart-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>オセロゲーム</h1>
+    <div id="board" class="board"></div>
+    <button id="restart" class="restart-btn">リスタート</button>
+  </div>
+  <script>
+    const boardSize = 8;
+    const directions = [
+      [-1, 0], [1, 0], [0, -1], [0, 1], // 上、下、左、右
+      [-1, -1], [1, 1], [-1, 1], [1, -1] // 斜め4方向
+    ];
+
+    let board = [];
+    let currentPlayer = 'black'; // 黒が先手
+    let gameOver = false;
+
+    function initBoard() {
+      board = [];
+      for (let i = 0; i < boardSize; i++) {
+        board[i] = [];
+        for (let j = 0; j < boardSize; j++) {
+          board[i][j] = null;
+        }
+      }
+      
+      // 初期状態をセット
+      board[3][3] = 'white';
+      board[3][4] = 'black';
+      board[4][3] = 'black';
+      board[4][4] = 'white';
+      
+      renderBoard();
+    }
+
+    function renderBoard() {
+      const boardElement = document.getElementById('board');
+      boardElement.innerHTML = '';
+      
+      for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
+          const cell = document.createElement('div');
+          cell.classList.add('cell');
+          if (board[i][j] === 'black') {
+            cell.classList.add('black');
+          } else if (board[i][j] === 'white') {
+            cell.classList.add('white');
+          }
+
+          cell.addEventListener('click', () => handleCellClick(i, j));
+          boardElement.appendChild(cell);
+        }
+      }
+    }
+
+    function handleCellClick(row, col) {
+      if (gameOver || board[row][col] !== null) return;
+      
+      // プレイヤーのターン
+      if (isValidMove(row, col, currentPlayer)) {
+        placeStone(row, col, currentPlayer);
+        flipStones(row, col, currentPlayer);
+        currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+        
+        if (!hasValidMoves(currentPlayer)) {
+          currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+          if (!hasValidMoves(currentPlayer)) {
+            gameOver = true;
+            alert("ゲーム終了!");
+          }
+        }
+        
+        if (currentPlayer === 'white' && !gameOver) {
+          cpuMove();
+        }
+        
+        renderBoard();
+      }
+    }
+
+    function isValidMove(row, col, player) {
+      if (board[row][col] !== null) return false;
+      
+      for (let [dx, dy] of directions) {
+        let x = row + dx, y = col + dy;
+        let foundOpponent = false;
+        
+        while (x >= 0 && x < boardSize && y >= 0 && y < boardSize) {
+          if (board[x][y] === null) break;
+          if (board[x][y] !== player) {
+            foundOpponent = true;
+          } else {
+            if (foundOpponent) return true;
+            break;
+          }
+          
+          x += dx;
+          y += dy;
+        }
+      }
+      
+      return false;
+    }
+
+    function placeStone(row, col, player) {
+      board[row][col] = player;
+    }
+
+    function flipStones(row, col, player) {
+      for (let [dx, dy] of directions) {
+        let x = row + dx, y = col + dy;
+        let stonesToFlip = [];
+        
+        while (x >= 0 && x < boardSize && y >= 0 && y < boardSize) {
+          if (board[x][y] === null) break;
+          if (board[x][y] === player) {
+            for (let [fx, fy] of stonesToFlip) {
+              board[fx][fy] = player;
+            }
+            break;
+          } else {
+            stonesToFlip.push([x, y]);
+          }
+          
+          x += dx;
+          y += dy;
+        }
+      }
+    }
+
+    function hasValidMoves(player) {
+      for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
+          if (board[i][j] === null && isValidMove(i, j, player)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function cpuMove() {
+      if (gameOver) return;
+      
+      const validMoves = [];
+      
+      for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
+          if (board[i][j] === null && isValidMove(i, j, 'white')) {
+            validMoves.push([i, j]);
+          }
+        }
+      }
+      
+      if (validMoves.length > 0) {
+        const [row, col] = validMoves[Math.floor(Math.random() * validMoves.length)];
+        placeStone(row, col, 'white');
+        flipStones(row, col, 'white');
+        currentPlayer = 'black';
+        renderBoard();
+        
+        if (!hasValidMoves('black')) {
+          currentPlayer = 'white';
+          if (!hasValidMoves('white')) {
+            gameOver = true;
+            alert("ゲーム終了!");
+          }
+        }
+      }
+    }
+
+    document.getElementById('restart').addEventListener('click', () => {
+      gameOver = false;
+      currentPlayer = 'black';
+      initBoard();
+    });
+
+    initBoard();
+  </script>
+</body>
 </html>
