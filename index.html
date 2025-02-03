@@ -96,12 +96,21 @@
     .restart-btn:active {
       transform: scale(0.98);
     }
+
+    .scoreboard {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div class="game-container">
     <h1>オセロゲーム</h1>
     <div id="board" class="board"></div>
+    <div id="scoreboard" class="scoreboard">
+      <p>黒: <span id="black-score">2</span> | 白: <span id="white-score">2</span></p>
+    </div>
     <button id="restart" class="restart-btn">リスタート</button>
   </div>
   <script>
@@ -166,7 +175,8 @@
           currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
           if (!hasValidMoves(currentPlayer)) {
             gameOver = true;
-            alert("ゲーム終了!");
+            updateScore();
+            displayWinner();
           }
         }
         
@@ -263,16 +273,49 @@
           currentPlayer = 'white';
           if (!hasValidMoves('white')) {
             gameOver = true;
-            alert("ゲーム終了!");
+            updateScore();
+            displayWinner();
           }
         }
       }
+    }
+
+    function updateScore() {
+      let blackScore = 0;
+      let whiteScore = 0;
+      
+      for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
+          if (board[i][j] === 'black') blackScore++;
+          if (board[i][j] === 'white') whiteScore++;
+        }
+      }
+      
+      document.getElementById('black-score').textContent = blackScore;
+      document.getElementById('white-score').textContent = whiteScore;
+    }
+
+    function displayWinner() {
+      const blackScore = parseInt(document.getElementById('black-score').textContent);
+      const whiteScore = parseInt(document.getElementById('white-score').textContent);
+
+      let winnerMessage = '';
+      if (blackScore > whiteScore) {
+        winnerMessage = '黒の勝ち！';
+      } else if (whiteScore > blackScore) {
+        winnerMessage = '白の勝ち！';
+      } else {
+        winnerMessage = '引き分け！';
+      }
+
+      alert(winnerMessage);
     }
 
     document.getElementById('restart').addEventListener('click', () => {
       gameOver = false;
       currentPlayer = 'black';
       initBoard();
+      document.getElementById('scoreboard').style.display = 'none';
     });
 
     initBoard();
