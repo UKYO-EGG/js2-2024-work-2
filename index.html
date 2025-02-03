@@ -20,6 +20,7 @@
       height: 100vh;
       color: #333;
       margin: 0;
+      position: relative;
     }
 
     .game-container {
@@ -102,6 +103,27 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
+
+    .winner-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3rem;
+      font-weight: bold;
+      color: #4CAF50;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
+      animation: fadeIn 2s ease;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
   </style>
 </head>
 <body>
@@ -113,6 +135,9 @@
     </div>
     <button id="restart" class="restart-btn">リスタート</button>
   </div>
+
+  <div id="winner-message" class="winner-message"></div>
+
   <script>
     const boardSize = 8;
     const directions = [
@@ -308,7 +333,9 @@
         winnerMessage = '引き分け！';
       }
 
-      alert(winnerMessage);
+      const winnerElement = document.getElementById('winner-message');
+      winnerElement.textContent = winnerMessage;
+      winnerElement.style.display = 'block';
     }
 
     document.getElementById('restart').addEventListener('click', () => {
@@ -316,6 +343,7 @@
       currentPlayer = 'black';
       initBoard();
       document.getElementById('scoreboard').style.display = 'none';
+      document.getElementById('winner-message').style.display = 'none';
     });
 
     initBoard();
